@@ -28,8 +28,8 @@ DATASET_NAME = 'mehra-complete-1000.csv'
 PAL = ['blue', 'green', 'red', 'yellow', 'orange', 'purple', 'magenta', 'cyan', 'brown']
 os.environ["LOKY_MAX_CPU_COUNT"] = "4"
 
-TITLE_COLOR = '\033[0;34m'
-RESULTS_COLOR = '\033[1;32m'
+TITLE_COLOR = '\033[0;34m'     # blue
+RESULTS_COLOR = '\033[1;32m'     # green
 STANDARD_COLOR = '\033[0m'
 
 CLEANING_APPROACHES = ['NaN deletion', 'NaN substitution']
@@ -86,6 +86,13 @@ print('Discrete features are:\n', discrete_features)
 ########################################
 # Configurations
 isToBePlotted = True
+
+# Initialization columns for csv file
+cleaning_col = []
+transf_col = []
+scaling_col = []
+cluster_col = []
+S_col = []
 
 
 # Iterate over different cleaning data methods
@@ -160,12 +167,12 @@ for i, cleaning_name in enumerate(CLEANING_APPROACHES):
                 print(f'\nSilhouette score = [{RESULTS_COLOR}{S:.3f}{STANDARD_COLOR}]')
 
                 # Time needed to computations
-                duration = (dt.now() - starting_time).seconds
-                print(f'\nComputational Time = [{RESULTS_COLOR}{duration} s{STANDARD_COLOR}]\n')
+                duration = (dt.now() - starting_time).microseconds // 1000
+                print(f'\nComputational Time = [{RESULTS_COLOR}{duration} ms{STANDARD_COLOR}]\n')
 
                 # Add clustering method and predicted labels 
                 predicted_labels.append(
-                    {'name': cluster_name, 'labels': labels}
+                    {'name': cluster_name, 'labels': labels, 'SILHOUETTE': round(S,2)}
                 )
                 if nclusters > max_nclusters:
                     max_nclusters = nclusters
@@ -212,3 +219,22 @@ for i, cleaning_name in enumerate(CLEANING_APPROACHES):
                 rho = np.abs( np.corrcoef(PM_values, SM_values)[0,1].round(2) )
 
                 print(f'For {prediction['name']} the cross-correlation is {rho:.2f}')
+            
+            # Generation of csv file
+            for item in predicted_labels:
+                cleaning_col.append(cleaning_name)
+                transf_col.append(transf_name)
+                scaling_col.append(scaling_name)
+                cluster_col.append(item['name'])
+                S_col.append(item['SILHOUETTE'])
+
+# Saving the csv file
+results = {
+    'CLEANING': cleaning_col,
+    'TRANSFORMATION': transf_col,
+    'SCALING': scaling_col,
+    'CLUSTER': cluster_col,
+    'SILHOUETTE': S_col
+}
+results = pd.DataFrame(results)
+results.to_csv(f'{output_dir}/Results.csv')
